@@ -37,4 +37,42 @@ public class ProductsController : ControllerBase
 
         return Ok(product);
     }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> Search(
+        [FromQuery] string? query,
+        [FromQuery] string? category,
+        [FromQuery] string? brand)
+    {
+        var productsQuery = _context.Products.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var loweredQuery = query.ToLower();
+
+            productsQuery = productsQuery.Where(p =>
+                p.Name.ToLower().Contains(loweredQuery) ||
+                p.Brand.ToLower().Contains(loweredQuery) ||
+                p.Category.ToLower().Contains(loweredQuery) ||
+                p.Description.ToLower().Contains(loweredQuery));
+        }
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            var loweredCategory = category.ToLower();
+            productsQuery = productsQuery.Where(p => p.Category.ToLower() == loweredCategory);
+        }
+
+        if (!string.IsNullOrWhiteSpace(brand))
+        {
+            var loweredBrand = brand.ToLower();
+            productsQuery = productsQuery.Where(p => p.Brand.ToLower() == loweredBrand);
+        }
+
+        var results = await productsQuery
+            .OrderBy(p => p.Id)
+            .ToListAsync();
+
+        return Ok(results);
+    }
 }
