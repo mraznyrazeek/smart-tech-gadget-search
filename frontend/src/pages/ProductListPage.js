@@ -56,13 +56,11 @@ function ProductListPage() {
         const hasCategoryOrBrand = !!(trimmedCategory || trimmedBrand);
         const hasSearch = trimmedSearch.length > 0;
 
-        // No filters at all -> show all
         if (!hasSearch && !hasCategoryOrBrand) {
           setProducts(allProducts);
           return;
         }
 
-        // Avoid noisy 1-character search unless category/brand filter is present
         if (hasSearch && trimmedSearch.length < 2 && !hasCategoryOrBrand) {
           setProducts(allProducts);
           return;
@@ -109,6 +107,8 @@ function ProductListPage() {
     (searchTerm.trim() ? 1 : 0) +
     (selectedCategory ? 1 : 0) +
     (selectedBrand ? 1 : 0);
+
+  const skeletonCards = Array.from({ length: 6 });
 
   return (
     <div className="catalog-page">
@@ -230,79 +230,97 @@ function ProductListPage() {
         {error && <p className="error-text">{error}</p>}
       </section>
 
-      {loading && allProducts.length === 0 ? (
-        <div className="loading-box glass-panel">Loading products...</div>
-      ) : (
-        <section className="product-grid" id="catalog">
-          {products.length === 0 ? (
-            <div className="empty-state glass-panel">
-              <h3>No products found</h3>
-              <p>Try a different search term or clear the filters.</p>
-              <button
-                className="clear-btn"
-                onClick={() => {
-                  setSearchTerm("");
-                  setDebouncedSearchTerm("");
-                  setSelectedCategory("");
-                  setSelectedBrand("");
-                  setError("");
-                }}
-              >
-                Clear Filters
-              </button>
-            </div>
-          ) : (
-            products.map((product) => (
-              <article
-                key={product.id}
-                className="product-card"
-                onClick={() => setSelectedProduct(product)}
-              >
-                <div className="card-glow"></div>
+      <section className="product-grid" id="catalog">
+        {loading ? (
+          skeletonCards.map((_, index) => (
+            <article key={index} className="product-card skeleton-card">
+              <div className="skeleton-image shimmer"></div>
 
-                <div className="product-image-wrap">
-                  {product.thumbnailUrl ? (
-                    <img
-                      src={product.thumbnailUrl}
-                      alt={product.name}
-                      className="product-image"
-                    />
-                  ) : (
-                    <div className="product-image placeholder-image">No Image</div>
-                  )}
+              <div className="product-body">
+                <div className="skeleton-chip-row">
+                  <div className="skeleton-chip shimmer"></div>
+                  <div className="skeleton-chip shimmer"></div>
                 </div>
 
-                <div className="product-body">
-                  <div className="product-chip-row">
-                    <span className="chip">{product.category}</span>
-                    <span className="chip muted-chip">{product.brand}</span>
+                <div className="skeleton-title shimmer"></div>
+                <div className="skeleton-line shimmer"></div>
+                <div className="skeleton-line short shimmer"></div>
+
+                <div className="skeleton-footer">
+                  <div className="skeleton-price shimmer"></div>
+                  <div className="skeleton-meta shimmer"></div>
+                </div>
+              </div>
+            </article>
+          ))
+        ) : products.length === 0 ? (
+          <div className="empty-state glass-panel">
+            <h3>No products found</h3>
+            <p>Try a different search term or clear the filters.</p>
+            <button
+              className="clear-btn"
+              onClick={() => {
+                setSearchTerm("");
+                setDebouncedSearchTerm("");
+                setSelectedCategory("");
+                setSelectedBrand("");
+                setError("");
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : (
+          products.map((product) => (
+            <article
+              key={product.id}
+              className="product-card"
+              onClick={() => setSelectedProduct(product)}
+            >
+              <div className="card-glow"></div>
+
+              <div className="product-image-wrap">
+                {product.thumbnailUrl ? (
+                  <img
+                    src={product.thumbnailUrl}
+                    alt={product.name}
+                    className="product-image"
+                  />
+                ) : (
+                  <div className="product-image placeholder-image">No Image</div>
+                )}
+              </div>
+
+              <div className="product-body">
+                <div className="product-chip-row">
+                  <span className="chip">{product.category}</span>
+                  <span className="chip muted-chip">{product.brand}</span>
+                </div>
+
+                <h3>{product.name}</h3>
+
+                <p className="description">
+                  {product.description?.length > 95
+                    ? `${product.description.substring(0, 95)}...`
+                    : product.description}
+                </p>
+
+                <div className="product-meta">
+                  <div className="price-area">
+                    <span>Price</span>
+                    <strong>${product.price}</strong>
                   </div>
 
-                  <h3>{product.name}</h3>
-
-                  <p className="description">
-                    {product.description?.length > 95
-                      ? `${product.description.substring(0, 95)}...`
-                      : product.description}
-                  </p>
-
-                  <div className="product-meta">
-                    <div className="price-area">
-                      <span>Price</span>
-                      <strong>${product.price}</strong>
-                    </div>
-
-                    <div className="side-meta">
-                      <span>★ {product.rating ?? "N/A"}</span>
-                      <span>Stock {product.stockQuantity}</span>
-                    </div>
+                  <div className="side-meta">
+                    <span>★ {product.rating ?? "N/A"}</span>
+                    <span>Stock {product.stockQuantity}</span>
                   </div>
                 </div>
-              </article>
-            ))
-          )}
-        </section>
-      )}
+              </div>
+            </article>
+          ))
+        )}
+      </section>
 
       {selectedProduct && (
         <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
