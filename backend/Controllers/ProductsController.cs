@@ -1,4 +1,5 @@
 using backend.Data;
+using backend.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +10,14 @@ namespace backend.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IProductSearchService _productSearchService;
 
-    public ProductsController(AppDbContext context)
+    public ProductsController(
+        AppDbContext context,
+        IProductSearchService productSearchService)
     {
         _context = context;
+        _productSearchService = productSearchService;
     }
 
     [HttpGet]
@@ -44,35 +49,7 @@ public class ProductsController : ControllerBase
         [FromQuery] string? category,
         [FromQuery] string? brand)
     {
-        var productsQuery = _context.Products.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(query))
-        {
-            var loweredQuery = query.ToLower();
-
-            productsQuery = productsQuery.Where(p =>
-                p.Name.ToLower().Contains(loweredQuery) ||
-                p.Brand.ToLower().Contains(loweredQuery) ||
-                p.Category.ToLower().Contains(loweredQuery) ||
-                p.Description.ToLower().Contains(loweredQuery));
-        }
-
-        if (!string.IsNullOrWhiteSpace(category))
-        {
-            var loweredCategory = category.ToLower();
-            productsQuery = productsQuery.Where(p => p.Category.ToLower() == loweredCategory);
-        }
-
-        if (!string.IsNullOrWhiteSpace(brand))
-        {
-            var loweredBrand = brand.ToLower();
-            productsQuery = productsQuery.Where(p => p.Brand.ToLower() == loweredBrand);
-        }
-
-        var results = await productsQuery
-            .OrderBy(p => p.Id)
-            .ToListAsync();
-
+        var results = await _productSearchService.SearchAsync(query, category, brand);
         return Ok(results);
     }
 }
