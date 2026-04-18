@@ -82,13 +82,43 @@ function ProductListPage() {
     return [...new Set(allProducts.map((p) => p.brand).filter(Boolean))].sort();
   }, [allProducts]);
 
+  const activeFilterCount =
+    (searchTerm ? 1 : 0) +
+    (selectedCategory ? 1 : 0) +
+    (selectedBrand ? 1 : 0);
+
   return (
     <div className="catalog-page">
       <div className="bg-orb orb-left"></div>
       <div className="bg-orb orb-right"></div>
       <div className="bg-grid"></div>
 
-      <section className="hero">
+      <header className="top-navbar">
+        <div className="nav-inner">
+          <div className="brand-wrap">
+            <div className="brand-icon">S</div>
+            <div>
+              <h3>SmartSearch</h3>
+              <span>Premium Product Discovery</span>
+            </div>
+          </div>
+
+          <nav className="nav-links">
+            <a href="#hero">Overview</a>
+            <a href="#search">Search</a>
+            <a href="#catalog">Catalog</a>
+          </nav>
+
+          <div className="nav-status">
+            <span className="status-chip">Results {products.length}</span>
+            <span className="status-chip accent-chip">
+              Filters {activeFilterCount}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <section className="hero" id="hero">
         <div className="hero-left">
           <div className="hero-pill">Premium Search Experience</div>
           <h1>
@@ -117,7 +147,7 @@ function ProductListPage() {
         </div>
       </section>
 
-      <section className="search-shell glass-panel">
+      <section className="search-shell glass-panel" id="search">
         <div className="search-top">
           <div>
             <h2>Search Catalog</h2>
@@ -179,7 +209,7 @@ function ProductListPage() {
       {loading && allProducts.length === 0 ? (
         <div className="loading-box glass-panel">Loading products...</div>
       ) : (
-        <section className="product-grid">
+        <section className="product-grid" id="catalog">
           {products.map((product) => (
             <article
               key={product.id}
