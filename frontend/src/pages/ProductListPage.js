@@ -19,6 +19,7 @@ function ProductListPage() {
       try {
         setLoading(true);
         setError("");
+
         const data = await getProducts();
         setProducts(data);
         setAllProducts(data);
@@ -39,19 +40,33 @@ function ProductListPage() {
         setLoading(true);
         setError("");
 
-        const hasFilters =
-          searchTerm.trim() || selectedCategory.trim() || selectedBrand.trim();
+        const trimmedSearch = searchTerm.trim();
+        const trimmedCategory = selectedCategory.trim();
+        const trimmedBrand = selectedBrand.trim();
 
-        if (!hasFilters) {
+        const hasCategoryOrBrand = trimmedCategory || trimmedBrand;
+        const hasSearch = trimmedSearch.length > 0;
+
+        // No filters at all -> show all products
+        if (!hasSearch && !hasCategoryOrBrand) {
           setProducts(allProducts);
-        } else {
-          const data = await searchProducts({
-            query: searchTerm,
-            category: selectedCategory,
-            brand: selectedBrand,
-          });
-          setProducts(data);
+          return;
         }
+
+        // If user typed only 1 character, avoid noisy search results
+        // Still allow category/brand filtering without search text
+        if (hasSearch && trimmedSearch.length < 2 && !hasCategoryOrBrand) {
+          setProducts(allProducts);
+          return;
+        }
+
+        const data = await searchProducts({
+          query: trimmedSearch.length >= 2 ? trimmedSearch : "",
+          category: trimmedCategory,
+          brand: trimmedBrand,
+        });
+
+        setProducts(data);
       } catch (err) {
         setError("Failed to search products.");
         console.error(err);
@@ -83,7 +98,7 @@ function ProductListPage() {
   }, [allProducts]);
 
   const activeFilterCount =
-    (searchTerm ? 1 : 0) +
+    (searchTerm.trim() ? 1 : 0) +
     (selectedCategory ? 1 : 0) +
     (selectedBrand ? 1 : 0);
 

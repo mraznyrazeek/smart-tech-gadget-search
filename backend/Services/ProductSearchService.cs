@@ -16,7 +16,50 @@ public class ProductSearchService : IProductSearchService
 
     public async Task<List<ProductSearchDocument>> SearchAsync(string? query, string? category, string? brand)
     {
+        var mustQueries = new List<Query>();
         var filterQueries = new List<Query>();
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            //mustQueries.Add(new MultiMatchQuery
+            //{
+            //    Query = query,
+            //    Fields = new[] { "name", "description", "brand", "category" },
+            //    Fuzziness = "AUTO"
+            //});
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                mustQueries.Add(new BoolQuery
+                {
+                    Should = new List<Query>
+        {
+            new MultiMatchQuery
+            {
+                Query = query,
+                Fields = new[]
+                {
+                    "name^3",
+                    "brand^2",
+                    "category",
+                    "description"
+                },
+                Fuzziness = "AUTO"
+            },
+
+            new MultiMatchQuery
+            {
+                Query = query,
+                Fields = new[] { "name", "brand" },
+                Type = TextQueryType.BoolPrefix
+            }
+        },
+
+                    MinimumShouldMatch = 1
+                });
+            }
+
+        }
 
         if (!string.IsNullOrWhiteSpace(category))
         {
@@ -38,48 +81,30 @@ public class ProductSearchService : IProductSearchService
 
         Query finalQuery;
 
-        if (string.IsNullOrWhiteSpace(query))
+        if (mustQueries.Count == 0 && filterQueries.Count == 0)
         {
-            finalQuery = new BoolQuery
-            {
-                Filter = filterQueries
-            };
+            finalQuery = new MatchAllQuery();
         }
         else
         {
             finalQuery = new BoolQuery
             {
-                Should = new List<Query>
-                {
-                    new MultiMatchQuery
-                    {
-                        Query = query,
-                        Fields = new[] { "name", "description", "brand", "category" },
-                        Fuzziness = "AUTO"
-                    },
-                    new MultiMatchQuery
-                    {
-                        Query = query,
-                        Fields = new[] { "name", "brand", "category" },
-                        Type = TextQueryType.BoolPrefix
-                    }
-                },
-                MinimumShouldMatch = 1,
+                Must = mustQueries,
                 Filter = filterQueries
             };
         }
 
         var request = new SearchRequest("products")
         {
-            Query = finalQuery
+            Query = finalQuery,
+            Size = 50
         };
 
         var response = await _elasticClient.SearchAsync<ProductSearchDocument>(request);
 
         if (!response.IsValidResponse)
         {
-            throw new Exception(
-                $"Elasticsearch search failed: {response.ElasticsearchServerError?.Error?.Reason ?? "Unknown error"}");
+            throw new Exception("Elasticsearch search failed.");
         }
 
         return response.Documents.ToList();
