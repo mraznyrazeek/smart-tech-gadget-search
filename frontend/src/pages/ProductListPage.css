@@ -605,6 +605,23 @@ body {
   background: rgba(250, 204, 21, 0.08);
 }
 
+.empty-state {
+  grid-column: 1 / -1;
+  padding: 40px 24px;
+  border-radius: 24px;
+  text-align: center;
+}
+
+.empty-state h3 {
+  margin: 0 0 10px;
+  font-size: 1.4rem;
+}
+
+.empty-state p {
+  margin: 0 0 18px;
+  color: #94a3b8;
+}
+
 @media (max-width: 1050px) {
   .hero {
     grid-template-columns: 1fr;

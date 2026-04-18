@@ -9,6 +9,7 @@ function ProductListPage() {
   const [error, setError] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
 
@@ -35,26 +36,33 @@ function ProductListPage() {
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
     const runSearch = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const trimmedSearch = searchTerm.trim();
+        const trimmedSearch = debouncedSearchTerm.trim();
         const trimmedCategory = selectedCategory.trim();
         const trimmedBrand = selectedBrand.trim();
 
-        const hasCategoryOrBrand = trimmedCategory || trimmedBrand;
+        const hasCategoryOrBrand = !!(trimmedCategory || trimmedBrand);
         const hasSearch = trimmedSearch.length > 0;
 
-        // No filters at all -> show all products
+        // No filters at all -> show all
         if (!hasSearch && !hasCategoryOrBrand) {
           setProducts(allProducts);
           return;
         }
 
-        // If user typed only 1 character, avoid noisy search results
-        // Still allow category/brand filtering without search text
+        // Avoid noisy 1-character search unless category/brand filter is present
         if (hasSearch && trimmedSearch.length < 2 && !hasCategoryOrBrand) {
           setProducts(allProducts);
           return;
@@ -76,7 +84,7 @@ function ProductListPage() {
     };
 
     runSearch();
-  }, [searchTerm, selectedCategory, selectedBrand, allProducts]);
+  }, [debouncedSearchTerm, selectedCategory, selectedBrand, allProducts]);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -173,6 +181,7 @@ function ProductListPage() {
             className="clear-btn"
             onClick={() => {
               setSearchTerm("");
+              setDebouncedSearchTerm("");
               setSelectedCategory("");
               setSelectedBrand("");
               setError("");
@@ -196,7 +205,7 @@ function ProductListPage() {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="search-select"
           >
-            <option value="">All Categories</option>
+            <option value="">Category</option>
             {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
@@ -209,7 +218,7 @@ function ProductListPage() {
             onChange={(e) => setSelectedBrand(e.target.value)}
             className="search-select"
           >
-            <option value="">All Brands</option>
+            <option value="">Brand</option>
             {brands.map((brand) => (
               <option key={brand} value={brand}>
                 {brand}
@@ -225,54 +234,73 @@ function ProductListPage() {
         <div className="loading-box glass-panel">Loading products...</div>
       ) : (
         <section className="product-grid" id="catalog">
-          {products.map((product) => (
-            <article
-              key={product.id}
-              className="product-card"
-              onClick={() => setSelectedProduct(product)}
-            >
-              <div className="card-glow"></div>
+          {products.length === 0 ? (
+            <div className="empty-state glass-panel">
+              <h3>No products found</h3>
+              <p>Try a different search term or clear the filters.</p>
+              <button
+                className="clear-btn"
+                onClick={() => {
+                  setSearchTerm("");
+                  setDebouncedSearchTerm("");
+                  setSelectedCategory("");
+                  setSelectedBrand("");
+                  setError("");
+                }}
+              >
+                Clear Filters
+              </button>
+            </div>
+          ) : (
+            products.map((product) => (
+              <article
+                key={product.id}
+                className="product-card"
+                onClick={() => setSelectedProduct(product)}
+              >
+                <div className="card-glow"></div>
 
-              <div className="product-image-wrap">
-                {product.thumbnailUrl ? (
-                  <img
-                    src={product.thumbnailUrl}
-                    alt={product.name}
-                    className="product-image"
-                  />
-                ) : (
-                  <div className="product-image placeholder-image">No Image</div>
-                )}
-              </div>
-
-              <div className="product-body">
-                <div className="product-chip-row">
-                  <span className="chip">{product.category}</span>
-                  <span className="chip muted-chip">{product.brand}</span>
+                <div className="product-image-wrap">
+                  {product.thumbnailUrl ? (
+                    <img
+                      src={product.thumbnailUrl}
+                      alt={product.name}
+                      className="product-image"
+                    />
+                  ) : (
+                    <div className="product-image placeholder-image">No Image</div>
+                  )}
                 </div>
 
-                <h3>{product.name}</h3>
-
-                <p className="description">
-                  {product.description?.length > 95
-                    ? `${product.description.substring(0, 95)}...`
-                    : product.description}
-                </p>
-
-                <div className="product-meta">
-                  <div className="price-area">
-                    <span>Price</span>
-                    <strong>${product.price}</strong>
+                <div className="product-body">
+                  <div className="product-chip-row">
+                    <span className="chip">{product.category}</span>
+                    <span className="chip muted-chip">{product.brand}</span>
                   </div>
 
-                  <div className="side-meta">
-                    <span>★ {product.rating ?? "N/A"}</span>
-                    <span>Stock {product.stockQuantity}</span>
+                  <h3>{product.name}</h3>
+
+                  <p className="description">
+                    {product.description?.length > 95
+                      ? `${product.description.substring(0, 95)}...`
+                      : product.description}
+                  </p>
+
+                  <div className="product-meta">
+                    <div className="price-area">
+                      <span>Price</span>
+                      <strong>${product.price}</strong>
+                    </div>
+
+                    <div className="side-meta">
+                      <span>★ {product.rating ?? "N/A"}</span>
+                      <span>Stock {product.stockQuantity}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))
+          )}
         </section>
       )}
 
